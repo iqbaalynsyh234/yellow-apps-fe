@@ -163,4 +163,22 @@ export const api = {
       throw new ApiError(500, 'Network error occurred');
     }
   },
+
+  async deleteLabel(labelId: number) {
+    try {
+      const response = await fetch(`${API_URL}/v1/labels/${labelId}`, {
+        method: 'DELETE',
+        headers: getHeaders(true),
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new ApiError(response.status, error.message || 'Failed to delete label');
+      }
+      return response.json();
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      throw new ApiError(500, 'Network error occurred');
+    }
+  },
 }; 

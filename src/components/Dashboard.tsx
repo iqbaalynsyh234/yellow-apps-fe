@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
 import { api } from '@/services/api';
 import CreateLabelModal from './CreateLabelModal';
+import Swal from 'sweetalert2';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -12,6 +13,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [deleting, setDeleting] = useState<number | null>(null);
 
   const fetchLabels = () => {
     setLoading(true);
@@ -39,6 +41,43 @@ export default function Dashboard() {
       fetchLabels();
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleDeleteLabel = async (labelId: number, labelName: string) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: `You want to delete "${labelName}"? This action cannot be undone!`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+      setDeleting(labelId);
+      try {
+        await api.deleteLabel(labelId);
+        await Swal.fire({
+          title: 'Deleted!',
+          text: 'Label has been deleted successfully.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
+        fetchLabels(); 
+      } catch (error) {
+        await Swal.fire({
+          title: 'Error!',
+          text: 'Failed to delete label. Please try again.',
+          icon: 'error',
+          confirmButtonColor: '#3085d6'
+        });
+      } finally {
+        setDeleting(null);
+      }
     }
   };
 
@@ -94,7 +133,15 @@ export default function Dashboard() {
                         className="flex items-center justify-between bg-white rounded-lg px-4 py-2 mb-2 last:mb-0"
                       >
                         <span>{label.name}</span>
-                        <button className="text-red-400 text-xs hover:underline">Delete</button>
+                        <button 
+                          className={`text-red-400 text-xs hover:underline ${
+                            deleting === label.id ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                          onClick={() => handleDeleteLabel(label.id, label.name)}
+                          disabled={deleting === label.id}
+                        >
+                          {deleting === label.id ? 'Deleting...' : 'Delete'}
+                        </button>
                       </div>
                     ))
                   )}
